@@ -12,87 +12,165 @@
     </div>
 
     <div class="puzzle-table-wrapper">
-      <table v-if="result && letters" class="puzzle-table">
+      <table class="puzzle-table">
         <tbody>
         <tr v-for="(item, i) in result">
-          <td v-for="(char, j) in item" :class="{'existed-letter': char !== '.'}" :style="boxStyling">
-            <span v-if="idArray[i][j] !== -1" class="word-index">{{idArray[i][j]}}</span>
-<!--            {{ char === '.' ? '' : char }}-->
+          <td v-for="(char, j) in item" :class="{'existed-letter': char.targetChar !== '*'}" :style="boxStyling">
+            <span v-if="wordStartIndex[i][j] !== -1" class="word-index">{{wordStartIndex[i][j]}}</span>
             <div class="input-wrapper"
-                 v-if="char !== '.'"
+                 v-if="char.targetChar !== '*'"
                  :class="{
-                   'matched': char === letters[i][j] && completed,
-                   'unmatched': char !== letters[i][j] && completed
+                   'matched': char.targetChar === letters[i][j] && completed,
+                   'unmatched': char.targetChar !== letters[i][j] && completed
                  }"
             >
               <input v-if="!completed" type="text" class="puzzle-input" maxlength="1" v-model="letters[i][j]" />
-              <span v-else>{{ char === '.' ? '' : char }}</span>
+              <span v-else>{{ char.targetChar === '*' ? '' : char.targetChar}}</span>
             </div>
           </td>
         </tr>
         </tbody>
       </table>
+    </div>
 
-      <div class="questions-container">
-        <div class="questions">
-          <div class="title-wrapper">
-            <span class="question-title">Down</span>
-          </div>
-          <div class="question-list">
+    <div class="questions-container">
+      <div class="questions">
+        <div class="title-wrapper">
+          <span class="question-title">Down</span>
+        </div>
+        <div class="question-list">
           <span v-for="item in downQuestions">
             {{ item.id }}. {{ item.question }}
           </span>
-          </div>
         </div>
+      </div>
 
-        <div class="questions">
-          <div class="title-wrapper">
-            <span class="question-title">Across</span>
-          </div>
-          <div class="question-list">
+      <div class="questions">
+        <div class="title-wrapper">
+          <span class="question-title">Across</span>
+        </div>
+        <div class="question-list">
           <span v-for="item in acrossQuestions">
             {{ item.id }}. {{ item.question }}
           </span>
-          </div>
         </div>
       </div>
     </div>
-
-
   </div>
 </template>
 
 <script>
-  // dummy data
-  let repeat;
+  import swal from 'sweetalert2'
 
-  let horizontalStart;
-  let horizontalEnd;
-  let verticalStart;
-  let verticalEnd;
-  let neverVisit;
-
-  let board = [];
-  let commonWord;
-  let wordIndex;
-
-  let pos_x;
-  let pos_y;
-
-  const words = [
-    'Apple', 'lion', 'continent', 'puzzle', 'stress', 'background', 'english',
-    'usually', 'success', 'experiment', 'basketball', 'football', 'tennis',
-    'tiger', 'lion', 'position', 'yesterday', 'umbrella', 'mountain'];
+  const GRID_WIDTH = 25, GRID_HEIGHT = 17, EMPTYCHAR = '*';
 
   // dummy data
-  const jsonResponse = [];
-  for(let i = 0; i < words.length; i++) {
-    jsonResponse.push({
-      "question": `What is that word ${i+1}?`,
-      "answer": words[i],
+  const jsonResponse = [
+    {
+      "question": 'What is that word 1?',
+      "answer": 'apple',
       "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
-    });
-  }
+    },
+    {
+      "question": 'What is that word 2?',
+      "answer": 'bear',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 3?',
+      "answer": 'continent',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 4?',
+      "answer": 'puzzle',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 5?',
+      "answer": 'stress',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 6?',
+      "answer": 'background',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 7?',
+      "answer": 'english',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 8?',
+      "answer": 'usually',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 9?',
+      "answer": 'success',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 10?',
+      "answer": 'experiment',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 11?',
+      "answer": 'basketball',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 12?',
+      "answer": 'football',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 13?',
+      "answer": 'tennis',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 14?',
+      "answer": 'tiger',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 15?',
+      "answer": 'lion',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 16?',
+      "answer": 'position',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 17?',
+      "answer": 'yesterday',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 18?',
+      "answer": 'umbrella',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+    {
+      "question": 'What is that word 19?',
+      "answer": 'mountain',
+      "helpText": 'This help text will be used on some questions as a hint and will only show up in the list of some questions'
+    },
+  ];
+
+  const words = jsonResponse.map((item, index) => ({
+    word: item.answer,
+    clue: '',
+    x: 0,
+    y: 0,
+    vertical: false,
+    index
+  }));
 
   export default {
     name: "CrosswordPuzzle",
@@ -103,17 +181,18 @@
     ],
     data () {
       return {
-        completed: false,
+        state: true,
         result: [],
         letters: [],
-        idArray: [],
-        currentTime: 0,
-        timerId: null,
+        activeWordList: [], //keeps array of words actually placed in board
+        wordStartIndex: [],
+        acrossCount: 0,
+        downCount: 0,
         acrossQuestions: [],
         downQuestions: [],
-        puzzleWidth: 25,
-        puzzleHeight: 17,
-        wordDirections: []  // array of word directions 0: across, 1: down
+        currentTime: 0,
+        timerId: null,
+        completed: false
       }
     },
     computed: {
@@ -125,12 +204,113 @@
       }
     },
     mounted() {
+      if (this.timer) {
+        this.initBoardResult();
+      }
+      else {
+        this.startPuzzle();
+      }
+
       this.initData();
-      this.drawPuzzle();
-      this.letters = [...this.letters];
     },
     methods: {
+      initData() {
+        for(let i = 0; i < GRID_HEIGHT; i++) {
+          this.letters[i] = [];
+          for(let j = 0; j < GRID_WIDTH; j++) {
+            this.letters[i][j] = '';
+          }
+        }
+
+        this.letters = [...this.letters];
+      },
+      initBoardResult() {
+        for(let i = 0; i < GRID_HEIGHT; i++) {
+          this.result[i] = [];
+          for(let j = 0; j < GRID_WIDTH; j++) {
+            this.result[i][j] = {};
+            this.result[i][j].targetChar = '*';
+          }
+        }
+
+        this.initWordStartIndex();
+        this.result = [...this.result];
+      },
+      initWordStartIndex(activeWordList = []) {
+        for(let i = 0; i < GRID_HEIGHT; i++) {
+          this.wordStartIndex[i] = [];
+          for(let j = 0; j < GRID_WIDTH; j++) {
+            this.wordStartIndex[i][j] = -1;
+          }
+        }
+
+        activeWordList.forEach((item) => {
+          if (this.wordStartIndex[item.x][item.y] === -1) {
+            this.wordStartIndex[item.x][item.y] = item.index + 1;
+          }
+          else {
+            this.wordStartIndex[item.x][item.y] += '/' + (item.index + 1);
+          }
+        });
+      },
+      estimateResult() {
+        let matchCnt = 0;
+
+        for(let i = 0; i < this.activeWordList.length; i++) {
+          const word = this.activeWordList[i].word;
+
+          let flag = true;
+
+          for(let j = 0; j < word.length; j++) {
+            let x, y;
+
+            if (this.activeWordList[i].vertical) {
+              x = this.activeWordList[i].x + j;
+              y = this.activeWordList[i].y;
+            }
+            else {
+              x = this.activeWordList[i].x;
+              y = this.activeWordList[i].y + j;
+            }
+
+            if (this.result[x][y].targetChar !== this.letters[x][y]) {
+              flag = false;
+            }
+          }
+
+          if (flag) matchCnt++;
+        }
+
+        return matchCnt;
+      },
       startPuzzle() {
+        const boardResult = this.board(25, 17, words);
+        this.result = boardResult.grid;
+
+        const acrossWords = boardResult.activeWordList.filter((item) => !item.vertical);
+        const downWords = boardResult.activeWordList.filter((item) => item.vertical);
+
+        this.activeWordList = boardResult.activeWordList;
+
+        this.acrossQuestions = acrossWords.map((item) => ({
+          id: item.index + 1,
+          question: jsonResponse[item.index].question
+        }));
+        this.downQuestions = downWords.map((item) => ({
+          id: item.index + 1,
+          question: jsonResponse[item.index].question
+        }));
+
+        this.acrossQuestions.sort((a, b) => {
+          return a.id - b.id;
+        });
+
+        this.downQuestions.sort((a, b) => {
+          return a.id - b.id;
+        });
+
+        this.initWordStartIndex(boardResult.activeWordList);
+
         if (this.timerId) {
           clearInterval(this.timerId);
           this.currentTime = 0;
@@ -141,13 +321,23 @@
         }, 1000);
 
         this.completed = false;
-        for (let i = 0; i < this.letters.length; i++) {
-          for (let j = 0; j < this.letters[i].length; j++) {
-            this.letters[i][j] = '';
-          }
-        }
+        this.initData();
       },
       completePuzzle() {
+        const correctWordsCnt = this.estimateResult();
+        const wrongWordsCnt = jsonResponse.length - correctWordsCnt;
+
+        console.log('Correct Words: ', correctWordsCnt);
+        console.log('Wrong Words: ', wrongWordsCnt);
+        console.log('Spent Time: ', this.currentTime);
+
+        swal({
+          type: 'success',
+          title: `Correct: ${correctWordsCnt} words`,
+          text: 'Thank you for completing the puzzle',
+          confirmButtonText: 'OK',
+        });
+
         if (this.timerId) {
           clearInterval(this.timerId);
           this.currentTime = 0;
@@ -155,384 +345,266 @@
 
         this.completed = true;
       },
-      getRandom (number) {
-        return Math.floor(Math.random() * number);
-      },
-      hasCommonLetter(word1, word2) {
-        for (let i = 0; i < word1.length; i++) {
-          if (word2.indexOf(word1[i]) !== -1)
-            return true;
+      board(columnCnt, rowCnt, words) { //instantiator object for making gameboards
+        const cols = columnCnt;
+        const rows = rowCnt;
+        let activeWordList = []; //keeps array of words actually placed in board
+        let acrossCount = 0;
+        let downCount = 0;
+        let coordList = [];
+        let grid = []; //create 2 dimensional array for letter grid
+
+        let wordArray = words.sort((a, b) => {
+          return b.word.length - a.word.length;
+        });
+
+        for (let i = 0; i < rows; i++) {
+          grid[i] = [];
         }
 
-        return false;
-      },
-      sortWords() {
-        const wordsCnt = words.length;
+        function suggestCoords(word) { //search for potential cross placement locations
 
-        wordIndex = new Array(wordsCnt);
-        for (let i = 0; i < wordsCnt; ++ i) {
-          words[i] = words[i].toLowerCase();
-          wordIndex[i] = i;
-        }
-
-        for (let i = 0; i < wordsCnt - 1; ++ i) {
-          for (let j = i + 1; j < wordsCnt; ++ j) {
-            if (words[i].length < words[j].length) {
-              const p = words[i];
-              words[i] = words[j];
-              words[j] = p;
-              const q = wordIndex[i];
-              wordIndex[i] = wordIndex[j];
-              wordIndex[j] = q;
-            }
-          }
-        }
-
-        for (let i = 0; i < wordsCnt - 1; ++ i) {
-          for (let j = i + 1; j < wordsCnt; ++ j) {
-            if (commonWord[i][j]) {
-              const p = words[i + 1];
-              words[i + 1] = words[j];
-              words[j] = p;
-              const q = wordIndex[i + 1];
-              wordIndex[i + 1] = wordIndex[j];
-              wordIndex[j] = q;
-              break;
-            }
-          }
-        }
-      },
-      initData() {
-        //Init Variable
-        const maxWordCount = 20;
-        this.puzzleWidth	= 25;
-        this.puzzleHeight = 19;
-        repeat = 100;
-
-        this.wordDirections	= new Array(maxWordCount);
-        pos_x = new Array(maxWordCount);
-        pos_y = new Array(maxWordCount);
-
-        board = new Array(this.puzzleHeight);
-        this.result = new Array(this.puzzleHeight);
-        this.letters = new Array(this.puzzleHeight);
-        horizontalStart = new Array(this.puzzleHeight);
-        horizontalEnd = new Array(this.puzzleHeight);
-        verticalStart = new Array(this.puzzleHeight);
-        verticalEnd	= new Array(this.puzzleHeight);
-        neverVisit = new Array(this.puzzleHeight);
-        this.idArray = new Array(this.puzzleHeight);
-
-        for (let i = 0; i < this.puzzleHeight; ++ i) {
-          board[i] = new Array (this.puzzleWidth);
-          this.result[i] = new Array (this.puzzleWidth);
-          this.letters[i] = new Array(this.puzzleWidth);
-          horizontalStart[i] = new Array (this.puzzleWidth);
-          horizontalEnd[i] = new Array (this.puzzleWidth);
-          verticalStart[i] = new Array (this.puzzleWidth);
-          verticalEnd[i] = new Array (this.puzzleWidth);
-          neverVisit[i] = new Array (this.puzzleWidth);
-          this.idArray[i] = new Array(this.puzzleWidth);
-        }
-
-        let N = words.length;
-        commonWord = new Array (N);
-        for (let i = 0; i < N; i ++) {
-          commonWord[i] = new Array(N);
-        }
-
-        for (let i = 0; i < N; i ++) {
-          for (let j = 0; j < N; j ++) {
-            if (i === j) commonWord[i][j] = true;
-            else commonWord[i][j] = this.hasCommonLetter(words[i], words[j]);
-          }
-        }
-
-        //Sort words
-        this.sortWords();
-      },
-      initVariable() {
-        for (let i = 0; i < this.puzzleHeight; ++ i) {
-          for (let j = 0; j < this.puzzleWidth; ++ j) {
-            board[i][j] = '.';
-            horizontalStart[i][j] = false;
-            horizontalEnd[i][j] = false;
-            verticalStart[i][j]	= false;
-            verticalEnd[i][j]	= false;
-            neverVisit[i][j] = false;
-          }
-        }
-      },
-      drawPuzzle() {
-        let i, j;
-        let N = words.length;
-        let maxMark = -10000;
-
-        while(true) {
-          repeat --;
-          if (repeat === 0) break;
-
-          this.initVariable();
-
-          let mark = 0;
-          let flag = false;
-          for (i = 0; i < N; ++ i) {
-            if (i === 0) this.wordDirections[i] = this.getRandom(2);
-            else this.wordDirections[i] = 1 - this.wordDirections[i - 1];
-
-            if(words[i].length === 0) {
-              if (words[i].length > this.puzzleWidth) {
-                flag = true;
-                break;
-              }
-            }
-
-            else {
-              if (words[i].length > this.puzzleHeight) {
-                flag = true;
-                break;
-              }
-            }
-
-            let error = false;
-            let predictPossible = true;
-            if (i === 0) predictPossible = false;
-
-            let count = 0;
-            let limit = 1;
-            let stx, sty, enx, eny;
-
-            let minX, minY, x, y;
-            let reverse = false;
-
-            while (true) {
-              error = false;
-              ++ count;
-
-              if (count > 500 && predictPossible) {
-                limit ++;
-                count = 0;
-                if (limit > i) {
-                  if (reverse) {
-                    predictPossible = false;
-                  }
-                  else {
-                    reverse = true;
-                    this.wordDirections[i] = 1 - this.wordDirections[i];
-                    limit = 1;
+          let c = '';
+          let coordCount = 0;
+          for (let i = 0; i < word.length; i++) { //cycle through each character of the word
+            for (let x = 0; x < GRID_HEIGHT; x++) {
+              for (let y = 0; y < GRID_WIDTH; y++) {
+                c = word[i];
+                if (grid[x][y].targetChar === c) { //check for letter match in cell
+                  if (x - i + 1> 0 && x - i + word.length-1 < GRID_HEIGHT) { //would fit vertically?
+                    coordList[coordCount] = {};
+                    coordList[coordCount].x = x - i;
+                    coordList[coordCount].y = y;
+                    coordList[coordCount].score = 0;
+                    coordList[coordCount].vertical = true;
+                    coordCount++;
                   }
 
+                  if (y - i + 1 > 0 && y - i + word.length-1 < GRID_WIDTH) { //would fit horizontally?
+                    coordList[coordCount] = {};
+                    coordList[coordCount].x = x;
+                    coordList[coordCount].y = y - i;
+                    coordList[coordCount].score = 0;
+                    coordList[coordCount].vertical = false;
+                    coordCount++;
+                  }
                 }
               }
+            }
+          }
+        }
 
-              if (count > 600 && !predictPossible) {
-                flag = true;
-                break;
+        function checkFitScore(word, x, y, vertical) {
+
+          let fitScore = 1; //default is 1, 2+ has crosses, 0 is invalid due to collision
+
+          if (vertical) { //vertical checking
+            for (let i = 0; i < word.length; i++) {
+              if (i === 0 && x > 0) { //check for empty space preceeding first character of word if not on edge
+                if (grid[x - 1][y].targetChar !== EMPTYCHAR) { //adjacent letter collision
+                  fitScore = 0;
+                  break;
+                }
+              } else if (i === word.length - 1 && x + i < GRID_HEIGHT - 1) { //check for empty space after last character of word if not on edge
+                if (grid[x+i+1][y].targetChar !== EMPTYCHAR) { //adjacent letter collision
+                  fitScore = 0;
+                  break;
+                }
               }
-
-              if (i >= limit && predictPossible) {
-                while (true) {
-                  if(commonWord[i][i - limit] && this.wordDirections[i - limit] !== this.wordDirections[i]) break;
-                  limit ++;
-                  if (limit > i) {
-                    if (reverse) {
-                      predictPossible = false;
+              if (x + i < GRID_HEIGHT) {
+                if (grid[x + i][y].targetChar === word[i]) { //letter match - aka cross point
+                  fitScore += 1;
+                } else if (grid[x + i][y].targetChar !== EMPTYCHAR) { //letter doesn't match and it isn't empty so there is a collision
+                  fitScore = 0;
+                  break;
+                } else { //verify that there aren't letters on either side of placement if it isn't a crosspoint
+                  if (y < GRID_WIDTH - 1) { //check right side if it isn't on the edge
+                    if (grid[x + i][y + 1].targetChar !== EMPTYCHAR) { //adjacent letter collision
+                      fitScore = 0;
                       break;
                     }
-                    else {
-                      reverse = true;
-                      this.wordDirections[i] = 1 - this.wordDirections[i];
-                      limit = 1;
+                  }
+                  if (y > 0) { //check left side if it isn't on the edge
+                    if (grid[x + i][y - 1].targetChar !== EMPTYCHAR) { //adjacent letter collision
+                      fitScore = 0;
+                      break;
                     }
-
-                  }
-                }
-                if (predictPossible) {
-                  if (this.wordDirections[i] === 0) {
-                    minX = pos_x[i - limit] - words[i].length + 1;
-                    minY = pos_y[i - limit];
-                    pos_x[i] = Math.max(0, minX + this.getRandom(words[i].length)) % (this.puzzleWidth - words[i].length + 1);
-                    pos_y[i] = (minY + this.getRandom(words[i - limit].length)) % this.puzzleHeight;
-                  }
-                  else {
-                    minY = pos_y[i - limit] - words[i].length + 1;
-                    minX = pos_x[i - limit];
-                    pos_y[i] = Math.max(0, minY + this.getRandom(words[i].length)) % (this.puzzleHeight - words[i].length + 1);
-                    pos_x[i] = (minX + this.getRandom(words[i - limit].length)) % this.puzzleWidth;
                   }
                 }
               }
-
-              if (!predictPossible) {
-                if (this.wordDirections[i] === 0) {
-                  pos_x[i] = this.getRandom(this.puzzleWidth - words[i].length + 1);
-                  pos_y[i] = this.getRandom(this.puzzleHeight);
-                }
-                else {
-                  pos_x[i] = this.getRandom(this.puzzleWidth);
-                  pos_y[i] = this.getRandom(this.puzzleHeight - words[i].length + 1);
-                }
-              }
-
-              if (this.wordDirections[i] === 0) {
-                stx = pos_x[i];
-                sty = pos_y[i];
-                eny = pos_y[i];
-                enx = pos_x[i] + words[i].length - 1;
-
-                if (horizontalStart[sty][stx] || horizontalEnd[eny][enx]) continue;
-              }
-              else {
-                stx = pos_x[i];
-                enx = pos_x[i];
-                sty = pos_y[i];
-                eny = pos_y[i] + words[i].length - 1;
-
-                if (verticalStart[sty][stx] || verticalEnd[eny][enx]) continue;
-              }
-
-              for(j = 0; j < words[i].length; ++ j) {
-                if (this.wordDirections[i] === 0) {
-                  y = pos_y[i];
-                  x = pos_x[i] + j;
-                }
-                else {
-                  y = pos_y[i] + j;
-                  x = pos_x[i];
-                }
-                if (neverVisit[y][x]) {
-                  error = true;
+            }
+          } else { //horizontal checking
+            for (let i = 0; i < word.length; i++) {
+              if (i === 0 && y > 0) { //check for empty space preceeding first character of word if not on edge
+                if (grid[x][y-1].targetChar !== EMPTYCHAR) { //adjacent letter collision
+                  fitScore = 0;
                   break;
                 }
-                if (board[y][x] === '.') continue;
-                if (board[y][x] !== words[i][j]) {
-                  error = true;
+              } else if (i === word.length - 1 && y + i < GRID_WIDTH -1) { //check for empty space after last character of word if not on edge
+                if (grid[x][y + i + 1].targetChar !== EMPTYCHAR) { //adjacent letter collision
+                  fitScore = 0;
                   break;
                 }
               }
+              if (y + i < GRID_WIDTH) {
+                if (grid[x][y + i].targetChar === word[i]) { //letter match - aka cross point
+                  fitScore += 1;
+                } else if (grid[x][y + i].targetChar !== EMPTYCHAR) { //letter doesn't match and it isn't empty so there is a collision
+                  fitScore = 0;
+                  break;
+                } else { //verify that there aren't letters on either side of placement if it isn't a crosspoint
+                  if (x < GRID_HEIGHT) { //check top side if it isn't on the edge
+                    if (grid[x + 1][y + i].targetChar !== EMPTYCHAR) { //adjacent letter collision
+                      fitScore = 0;
+                      break;
+                    }
+                  }
+                  if (x > 0) { //check bottom side if it isn't on the edge
+                    if (grid[x - 1][y + i].targetChar !== EMPTYCHAR) { //adjacent letter collision
+                      fitScore = 0;
+                      break;
+                    }
+                  }
+                }
+              }
 
-              if (error) continue;
-              break;
-            }
-
-            if(flag) break;
-            if(!predictPossible) mark -= 100;
-            //Vertical, Horizontal
-            if (this.wordDirections[i] === 0) {
-              if (sty > 0) {
-                for (j = stx; j <= enx; ++ j) {
-                  horizontalStart[sty - 1][j] = true;
-                  horizontalEnd[sty - 1][j] = true;
-                  verticalEnd[sty - 1][j] = true;
-                }
-              }
-              for (j = stx; j <= enx; ++ j) {
-                horizontalStart[sty][j] = true;
-                horizontalEnd[sty][j] = true;
-              }
-              if (sty < this.puzzleHeight - 1) {
-                for (j = stx; j <= enx; ++ j) {
-                  horizontalStart[sty + 1][j] = true;
-                  horizontalEnd[sty + 1][j] = true;
-                  verticalStart[sty + 1][j] = true;
-                }
-              }
-              if (stx > 0) {
-                neverVisit[sty][stx - 1] = true;
-              }
-              if (enx < this.puzzleWidth - 1) {
-                neverVisit[sty][enx + 1] = true;
-              }
-            }
-            else {
-              if (stx > 0) {
-                for (j = sty; j <= eny; ++ j) {
-                    verticalStart[j][stx - 1] = true;
-                    verticalEnd[j][stx - 1] = true;
-                    horizontalEnd[j][stx - 1] = true;
-                }
-              }
-              for (j = sty; j <= eny; ++ j) {
-                  verticalStart[j][stx] = true;
-                  verticalEnd[j][stx] = true;
-              }
-              if (stx < this.puzzleWidth - 1) {
-                for (j = sty; j <= eny; ++ j) {
-                    verticalStart[j][stx + 1] = true;
-                    verticalEnd[j][stx + 1] = true;
-                    horizontalStart[j][stx + 1] = true;
-                }
-              }
-              if (sty > 0) {
-                neverVisit[sty - 1][stx] = true;
-              }
-              if (eny < this.puzzleHeight - 1) {
-                neverVisit[eny + 1][stx] = true;
-              }
-            }
-
-            for (j = 0; j < words[i].length; ++ j) {
-              if (this.wordDirections[i] === 0) {
-                y = pos_y[i];
-                x = pos_x[i] + j;
-              } else {
-                y = pos_y[i] + j;
-                x = pos_x[i];
-              }
-                board[y][x] = words[i][j];
             }
           }
 
-          if(flag) continue;
+          return fitScore;
+        }
 
-          for (i = 0; i < this.puzzleHeight; ++ i) {
-            for (j = 0; j < this.puzzleWidth; ++ j) {
-              if (board[i][j] === '.') mark ++;
+        function placeWord(word, clue, x, y, vertical, index) { //places a new active word on the board
+          let wordPlaced = false;
+
+          if (vertical) {
+            if (word.length + x < GRID_HEIGHT) {
+              for (let i = 0; i < word.length; i++) {
+                grid[x + i][y].targetChar = word[i];
+              }
+              wordPlaced = true;
+            }
+          } else {
+            if (word.length + y < GRID_WIDTH) {
+              for (let i = 0; i < word.length; i++) {
+                grid[x][y + i].targetChar = word[i];
+              }
+              wordPlaced = true;
             }
           }
 
-          if (maxMark < mark) {
-            console.log(maxMark);
-            maxMark = mark;
-            for (i = 0; i < this.puzzleHeight; ++ i) {
-              for (j = 0; j < this.puzzleWidth; ++ j) {
-                this.result[i][j] = board[i][j];
+          if (wordPlaced) {
+            let currentIndex = activeWordList.length;
+            activeWordList[currentIndex] = {};
+            activeWordList[currentIndex].word = word;
+            activeWordList[currentIndex].clue = clue;
+            activeWordList[currentIndex].x = x;
+            activeWordList[currentIndex].y = y;
+            activeWordList[currentIndex].vertical = vertical;
+            activeWordList[currentIndex].index = index;
+
+            if (activeWordList[currentIndex].vertical) {
+              downCount++;
+              activeWordList[currentIndex].number = downCount;
+            } else {
+              acrossCount++;
+              activeWordList[currentIndex].number = acrossCount;
+            }
+          }
+
+        }
+
+        function isActiveWord(word) {
+
+          if (activeWordList.length > 0) {
+            for (let w = 0; w < activeWordList.length; w++) {
+              if (word === activeWordList[w].word) {
+                return true;
               }
             }
-            for (i = 0; i < this.puzzleHeight; ++ i) {
-              for (j = 0; j < this.puzzleWidth; ++ j) {
-                this.idArray[i][j] = -1;
-              }
-            }
-            this.acrossQuestions = [];
-            this.downQuestions = [];
+          }
+          return false;
+        }
 
-            for (i = 0; i < N; i ++) {
-              this.idArray[pos_y[i]][pos_x[i]] = wordIndex[i] + 1;
+        function getRandom(number) {
+          return Math.floor(Math.random() * number);
+        }
 
-              if(this.wordDirections[i] === 0) {
-                this.acrossQuestions.push({
-                  id: wordIndex[i] + 1,
-                  question: jsonResponse[wordIndex[i]].question
-                });
-              }
-              else {
-                this.downQuestions.push({
-                  id: wordIndex[i] + 1,
-                  question: jsonResponse[wordIndex[i]].question
-                });
-              }
-            }
+        function shuffleArray (array) {
+          for (let i = 0; i < 50; i ++) {
+            const position1 = getRandom(array.length);
+            const position2 = getRandom(array.length);
 
-            this.acrossQuestions.sort((a, b) => {
-              return a.id - b.id;
-            });
-
-            this.downQuestions.sort((a, b) => {
-              return a.id - b.id;
-            });
+            const temp = array[position1];
+            array[position1] = array[position2];
+            array[position2] = temp;
           }
         }
+
+        //for each word in the source array we test where it can fit on the board and then test those locations for validity against other already placed words
+        function generateBoard(seed = 0) {
+          let bestScoreIndex = 0;
+          let top = 0;
+          let topScore = 0;
+          let fitScore = 0;
+          let startTime;
+
+          activeWordList = [];
+          coordList = [];
+          acrossCount = downCount = 0;
+
+          for (let x = 0; x < rows; x++) {
+            for (let y = 0; y < cols; y++) {
+              grid[x][y] = {};
+              grid[x][y].targetChar = EMPTYCHAR; //target character, hidden
+              grid[x][y].indexDisplay = ''; //used to display index number of word start
+              grid[x][y].value = '-'; //actual current letter shown on board
+            }
+          }
+
+          const randomX = Math.floor(Math.random() * (GRID_HEIGHT - 1));
+          const randomY = Math.floor(Math.random() * GRID_WIDTH);
+
+          //manually place the longest word horizontally at 0,0, try others if the generated board is too weak
+          placeWord(wordArray[seed].word, wordArray[seed].clue, randomX, randomY, false, wordArray[seed].index);
+
+          //attempt to fill the rest of the board
+          for (let iy = 0; iy < 2; iy++) { //usually 2 times is enough for max fill potential
+            for (let ix = 1; ix < wordArray.length; ix++) {
+              if (!isActiveWord(wordArray[ix].word)) { //only add if not already in the active word list
+                topScore = 0;
+                bestScoreIndex = 0;
+
+                suggestCoords(wordArray[ix].word); //fills coordList and coordCount
+                shuffleArray(coordList); //adds some randomization
+
+                if (coordList[0]) {
+                  for (let c = 0; c < coordList.length; c++) { //get the best fit score from the list of possible valid coordinates
+                    fitScore = checkFitScore(wordArray[ix].word, coordList[c].x, coordList[c].y, coordList[c].vertical);
+                    if (fitScore > topScore) {
+                      topScore = fitScore;
+                      bestScoreIndex = c;
+                    }
+                  }
+                }
+
+                if (topScore > 1) { //only place a word if it has a fitscore of 2 or higher
+                  placeWord(wordArray[ix].word, wordArray[ix].clue, coordList[bestScoreIndex].x, coordList[bestScoreIndex].y, coordList[bestScoreIndex].vertical, wordArray[ix].index);
+                }
+              }
+            }
+          }
+          if(activeWordList.length !== wordArray.length) { //regenerate board if if less than half the words were placed
+            generateBoard();
+          }
+        }
+
+        generateBoard();
+
+        return {
+          grid,
+          activeWordList
+        };
       }
     }
   }
@@ -588,8 +660,8 @@
 
         .word-index {
           position: absolute;
-          top: 0px;
-          left: 0px;
+          top: 0;
+          left: 0;
           font-size: 10px;
         }
 
@@ -614,8 +686,13 @@
   }
 
   .questions-container {
+    display: flex;
+    width: 700px;
+    margin: 30px auto;
+    justify-content: space-between;
+
     .questions {
-      margin: 0 30px 30px 30px;
+      max-width: 50%;
 
       .title-wrapper {
         text-align: left;
