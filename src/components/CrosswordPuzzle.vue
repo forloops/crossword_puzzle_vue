@@ -3,7 +3,7 @@
     <h1>Crossword Puzzle</h1>
 
     <div v-if="timer" class="time-wrapper">
-      <span class="current-time">{{ currentTime }}</span>
+      <span class="current-time">{{ formattedCurrentTime }}</span>
     </div>
 
     <div class="actions-container">
@@ -39,7 +39,7 @@
           <span class="question-title">Down</span>
         </div>
         <div class="question-list">
-          <span v-for="item in downQuestions">
+          <span v-for="item in downQuestions" :title="item.helpText">
             {{ item.id }}. {{ item.question }}
           </span>
         </div>
@@ -50,7 +50,7 @@
           <span class="question-title">Across</span>
         </div>
         <div class="question-list">
-          <span v-for="item in acrossQuestions">
+          <span v-for="item in acrossQuestions" :title="item.helpText">
             {{ item.id }}. {{ item.question }}
           </span>
         </div>
@@ -196,6 +196,9 @@
       }
     },
     computed: {
+      formattedCurrentTime(){
+          return new Date(this.currentTime * 1000).toISOString().substr(11, 8)
+      },
       boxStyling: function () {
         return {
           background: this.color ? this.color : '#ffffff',
@@ -294,11 +297,13 @@
 
         this.acrossQuestions = acrossWords.map((item) => ({
           id: item.index + 1,
-          question: jsonResponse[item.index].question
+          question: jsonResponse[item.index].question,
+          helpText: jsonResponse[item.index].helpText
         }));
         this.downQuestions = downWords.map((item) => ({
           id: item.index + 1,
-          question: jsonResponse[item.index].question
+          question: jsonResponse[item.index].question,
+          helpText: jsonResponse[item.index].helpText
         }));
 
         this.acrossQuestions.sort((a, b) => {
@@ -329,12 +334,12 @@
 
         console.log('Correct Words: ', correctWordsCnt);
         console.log('Wrong Words: ', wrongWordsCnt);
-        console.log('Spent Time: ', this.currentTime);
+        console.log('Spent Time: ', this.formattedCurrentTime);
 
         swal({
           type: 'success',
-          title: `Correct: ${correctWordsCnt} words`,
-          text: 'Thank you for completing the puzzle',
+          title: `Puzzle Completed`,
+          text: `You had ${correctWordsCnt} ${(correctWordsCnt>1?'words':'word')} correct and ${wrongWordsCnt} incorrect.`,
           confirmButtonText: 'OK',
         });
 
@@ -707,6 +712,9 @@
       .question-list {
         display: flex;
         flex-direction: column;
+        span{
+          cursor:pointer;
+        }
       }
     }
   }
