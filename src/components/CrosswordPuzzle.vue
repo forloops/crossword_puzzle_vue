@@ -20,11 +20,21 @@
             <div class="input-wrapper"
                  v-if="char.targetChar !== '*'"
                  :class="{
-                   'matched': char.targetChar === letters[i][j] && completed,
-                   'unmatched': char.targetChar !== letters[i][j] && completed
+                   'matched': char.targetChar === letters[i][j],
+                   'unmatched': char.targetChar !== letters[i][j]
                  }"
             >
-              <input v-if="!completed" type="text" class="puzzle-input" maxlength="1" v-model="letters[i][j]" />
+              <input
+                v-if="!completed"
+                type="text"
+                class="puzzle-input"
+                maxlength="1"
+                autocomplete="off"
+                v-model="letters[i][j]"
+                :id="`input-${i}-${j}`"
+                @keyup="e => moveOnCursor(e, i, j)"
+                @click="onClickInput(i, j)"
+              />
               <span v-else>{{ char.targetChar === '*' ? '' : char.targetChar}}</span>
             </div>
           </td>
@@ -192,7 +202,8 @@
         downQuestions: [],
         currentTime: 0,
         timerId: null,
-        completed: false
+        completed: false,
+        inputDirection: false
       }
     },
     computed: {
@@ -217,6 +228,36 @@
       this.initData();
     },
     methods: {
+      onClickInput (i, j) {
+        const wordIndex = this.result[i][j].indexOfWord;
+        this.inputDirection = this.activeWordList.find(word => word.index === wordIndex).vertical;
+      },
+      moveOnCursor (event, i, j) {
+        let X, Y;
+        if (this.inputDirection) {
+          X = 1; Y = 0;
+        } else {
+          X = 0; Y = 1;
+        }
+        if (event.key === "Backspace") {
+          document.getElementById(`input-${i - X}-${j - Y}`) && document.getElementById(`input-${i - X}-${j - Y}`).focus();
+        } else if (event.key === "ArrowLeft") {
+          document.getElementById(`input-${i}-${j - 1}`) && document.getElementById(`input-${i}-${j - 1}`).focus();
+        } else if (event.key === "ArrowRight") {
+          document.getElementById(`input-${i}-${j + 1}`) && document.getElementById(`input-${i}-${j + 1}`).focus();
+        } else if (event.key === "ArrowUp") {
+          document.getElementById(`input-${i - 1}-${j}`) && document.getElementById(`input-${i - 1}-${j}`).focus();
+        } else if (event.key === "ArrowDown") {
+          document.getElementById(`input-${i + 1}-${j}`) && document.getElementById(`input-${i + 1}-${j}`).focus();
+        }
+        else if (event.target.value.length > 0) {
+          if (/^[0-9a-zA-Z]$/.test(event.key)) {
+            document.getElementById(`input-${i}-${j}`).value = event.key;
+            this.letters[i][j] = event.key;
+          }
+          document.getElementById(`input-${i + X}-${j + Y}`) && document.getElementById(`input-${i + X}-${j + Y}`).focus();
+        }
+      },
       initData() {
         for(let i = 0; i < GRID_HEIGHT; i++) {
           this.letters[i] = [];
@@ -289,10 +330,8 @@
       startPuzzle() {
         const boardResult = this.board(25, 17, words);
         this.result = boardResult.grid;
-
         const acrossWords = boardResult.activeWordList.filter((item) => !item.vertical);
         const downWords = boardResult.activeWordList.filter((item) => item.vertical);
-
         this.activeWordList = boardResult.activeWordList;
 
         this.acrossQuestions = acrossWords.map((item) => ({
@@ -486,6 +525,10 @@
             if (word.length + x < GRID_HEIGHT) {
               for (let i = 0; i < word.length; i++) {
                 grid[x + i][y].targetChar = word[i];
+                if (grid[x + i][y].indexOfLetter !== 0) {
+                  grid[x + i][y].indexOfWord = index;
+                  grid[x + i][y].indexOfLetter = i;
+                }
               }
               wordPlaced = true;
             }
@@ -493,6 +536,10 @@
             if (word.length + y < GRID_WIDTH) {
               for (let i = 0; i < word.length; i++) {
                 grid[x][y + i].targetChar = word[i];
+                if (grid[x][y + i].indexOfLetter !== 0) {
+                  grid[x][y + i].indexOfWord = index;
+                  grid[x][y + i].indexOfLetter = i;
+                }
               }
               wordPlaced = true;
             }
@@ -564,6 +611,8 @@
               grid[x][y].targetChar = EMPTYCHAR; //target character, hidden
               grid[x][y].indexDisplay = ''; //used to display index number of word start
               grid[x][y].value = '-'; //actual current letter shown on board
+              grid[x][y].indexOfWord = '-1';
+              grid[x][y].indexOfLetter = '-1';
             }
           }
 
@@ -681,10 +730,18 @@
 
         .matched {
           color: #42b983;
+
+          .puzzle-input {
+            color: #42b983;
+          }
         }
 
         .unmatched {
           color: #ff2343;
+
+          .puzzle-input {
+            color: #ff2343;
+          }
         }
       }
     }
